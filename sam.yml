@@ -3,8 +3,8 @@
   become: yes
   vars:
     user_name: sam
-    compose_repo_url: "https://github.com/linux-docker-2025/semaphore-v1/starrs/docker-compose.yml.git"
-    compose_dir: "/home/{{ user_name }}/docker-compose-app"
+    local_compose_dir: "/starrs/docker-compose.yml"
+    remote_compose_dir: "/home/{{ user_name }}/docker-compose-app"
 
   tasks:
     - name: Update apt package index
