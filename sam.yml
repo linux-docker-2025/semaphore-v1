@@ -1,0 +1,71 @@
+---
+- hosts: all
+  become: yes
+  vars:
+    user_name: sam
+    compose_repo_url: "https://github.com/your-repo/your-compose-script.git"
+    compose_dir: "/home/{{ user_name }}/docker-compose-app"
+
+  tasks:
+    - name: Update apt package index
+      apt:
+        update_cache: yes
+    
+    - name: Install Docker, Docker Compose, Python3, and Pip3
+      apt:
+        name:
+          - docker.io
+          - docker-compose
+          - python3
+          - python3-pip
+        state: present
+    
+    - name: Reboot the server after installation
+      reboot:
+        msg: "Rebooting after installing Docker and Python3"
+        pre_reboot_delay: 5
+    
+    - name: Wait for the server to come back online
+      wait_for_connection:
+        timeout: 300
+
+    - name: Add user 'sam' with sudo privileges
+      user:
+        name: "{{ user_name }}"
+        state: present
+        groups: sudo
+        append: yes
+        password: "{{ 'password' | password_hash('sha512') }}"
+    
+    - name: Add user 'sam' to Docker group
+      user:
+        name: "{{ user_name }}"
+        groups: docker
+        append: yes
+
+    - name: Reboot the server after adding user 'sam'
+      reboot:
+        msg: "Rebooting after adding user 'sam' with sudo and Docker privileges"
+        pre_reboot_delay: 5
+    
+    - name: Wait for the server to come back online
+      wait_for_connection:
+        timeout: 300
+    
+    - name: Clone Docker Compose repository
+      git:
+        repo: "{{ compose_repo_url }}"
+        dest: "{{ compose_dir }}"
+        version: "main"
+    
+    - name: Change ownership of the cloned directory
+      file:
+        path: "{{ compose_dir }}"
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        state: directory
+    
+    - name: Run Docker Compose script
+      command: "docker-compose up -d"
+      args:
+        chdir: "{{ compose_dir }}"
