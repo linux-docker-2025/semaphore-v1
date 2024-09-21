@@ -59,11 +59,7 @@
       wait_for_connection:
         timeout: 300
     
-    - name: Clone Docker Compose repository
-      git:
-        repo: "{{ compose_repo_url }}"
-        dest: "{{ compose_dir }}"
-        version: "main"
+
     
     - name: Create directory for Docker Compose files on the remote server
       file:
