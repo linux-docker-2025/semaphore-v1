@@ -73,6 +73,6 @@
         state: directory
     
     - name: Run Docker Compose script
-      command: "docker-compose up -d"
+      command: docker-compose up -d
       args:
-        chdir: "{{
+        chdir: "{{ compose_dir }}"
