@@ -1,11 +1,18 @@
 ---
 - name: Setup basic tools and Docker for user casey
   hosts: all
-  become: true  # Run tasks with elevated privileges
+  become: true
   vars:
-    user_name: casey  # Variable for the user name
+    user_name: casey
+    home_directory: "/home/casey"
+    ssh_public_key: "ssh-rsa AAAAB3Nz... your_public_key_here"  # Replace with your actual public key
 
   tasks:
+    - name: Update apt cache and upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
     - name: Install essential packages
       apt:
         name:
@@ -17,14 +24,23 @@
           - docker-compose
           - python3
           - python3-pip
+          - sudo
         state: present
         update_cache: yes
 
-    - name: Create user casey if not exists
+    - name: Create user casey with home directory
       user:
         name: "{{ user_name }}"
-        state: present
+        home: "{{ home_directory }}"
         shell: /bin/bash
+        create_home: yes
+        state: present
+
+    - name: Set password for user casey
+      user:
+        name: "{{ user_name }}"
+        password: "{{ 'password' | password_hash('sha512') }}"
+        update_password: on_create
 
     - name: Add user casey to sudo group
       user:
@@ -38,8 +54,47 @@
         groups: docker
         append: yes
 
-    - name: Enable Docker service to start on boot
+    - name: Create .ssh directory for user casey
+      file:
+        path: "{{ home_directory }}/.ssh"
+        state: directory
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        mode: '0700'
+
+    - name: Add authorized SSH key for user casey
+      copy:
+        dest: "{{ home_directory }}/.ssh/authorized_keys"
+        content: "{{ ssh_public_key }}"
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        mode: '0600'
+
+    - name: Add casey to sudoers file with no password prompt (optional)
+      lineinfile:
+        path: /etc/sudoers
+        line: "{{ user_name }} ALL=(ALL) NOPASSWD:ALL"
+        state: present
+        validate: 'visudo -cf %s'
+
+    - name: Enable and start Docker service
       systemd:
         name: docker
         enabled: yes
         state: started
+
+    - name: Install Docker Compose via pip
+      pip:
+        name: docker-compose
+        state: present
+
+    - name: Verify Docker is working for user casey
+      command: "docker run hello-world"
+      become_user: "{{ user_name }}"
+      ignore_errors: yes  # Ignore errors in case Docker isn't set up properly yet
+
+  handlers:
+    - name: Restart Docker
+      systemd:
+        name: docker
+        state: restarted
