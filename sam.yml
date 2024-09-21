@@ -3,7 +3,7 @@
   become: yes
   vars:
     user_name: sam
-    compose_repo_url: "https://github.com/linux-docker-2025/semaphore-v1/blob/main/starrs/docker-compose.yml"
+    compose_repo_url: "https://github.com/your-repo/your-compose-script.git"
     compose_dir: "/home/{{ user_name }}/docker-compose-app"
 
   tasks:
@@ -11,7 +11,7 @@
       apt:
         update_cache: yes
     
-    - name: Install Docker, Docker Compose, Python3, and Pip3
+    - name: Install Docker, Docker Compose, Python3, Pip3, and Git
       apt:
         name:
           - docker.io
@@ -20,10 +20,16 @@
           - python3-pip
           - git
         state: present
+
+    - name: Ensure git is installed
+      command: git --version
+      register: git_version
+      failed_when: git_version.rc != 0
+      changed_when: false
     
     - name: Reboot the server after installation
       reboot:
-        msg: "Rebooting after installing Docker and Python3"
+        msg: "Rebooting after installing Docker, Python3, and Git"
         pre_reboot_delay: 5
     
     - name: Wait for the server to come back online
@@ -69,4 +75,4 @@
     - name: Run Docker Compose script
       command: "docker-compose up -d"
       args:
-        chdir: "{{ compose_dir }}"
+        chdir: "{{
