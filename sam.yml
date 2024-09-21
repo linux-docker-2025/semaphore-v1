@@ -3,7 +3,7 @@
   become: yes
   vars:
     user_name: sam
-    compose_repo_url: "https://github.com/linux-docker-2025/semaphore-v1.git"
+    compose_repo_url: "https://github.com/linux-docker-2025/semaphore-v1/blob/main/sam.yml"
     compose_dir: "/home/{{ user_name }}/docker-compose-app"
 
   tasks:
