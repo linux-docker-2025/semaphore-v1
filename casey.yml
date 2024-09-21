@@ -5,7 +5,9 @@
   vars:
     user_name: casey
     home_directory: "/home/casey"
-    ssh_public_key: "ssh-rsa AAAAB3Nz... your_public_key_here"  # Replace with your actual public key
+    ssh_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC15PxrboP5OSbPgq06VE+HJhRho59YWLDQkImRvAZeH3T0cfRYXMls4JibxlOphI0zgS2QgKxPHSBCTi4Ent/iDtRviiILw9OC3n/igRCTQaFHGiEvL0bLKsiPlSIOWGoaN2d3Tdl7QQ3IfmOU2aXqoEG7EMqTmqeZyxibIQdQw9R18ZQv/pS7b0uQL92kiFdfsaHXigqJXVeAR/R7+4vrNlS25bSi35ULLmu+99nTbhshzhAdJvD4WAIvKdeFZWhDnPZTDhmvh6pxsCB5DvOiQIzCF6eIst6kzMq6K1/DFnv7F+5WR6IiSOYOtLSC0PoX0eTYJrkAOyJrMgH5sNUUGqSLYEAIpzCgrdfuEEkFg3G59gsihroUOVpu58LJMV7lU8amC5W4tnF/rivxWwQkIPPNBLrGooYpI1a8qtyig89mGRMxjG1fQtvLTaz5DTZPTLLid2iYZARWQfEsTlTA+6TzyVObZZnzue4y4WPo1urTRcl612Hsmg7o8zgS9kc= daniel@casa
+"  # Replace with your actual public key
+    docker_compose_version: "1.29.2"  # Specify desired Docker Compose version
 
   tasks:
     - name: Update apt cache and upgrade packages
@@ -21,7 +23,6 @@
           - htop
           - curl
           - docker.io
-          - docker-compose
           - python3
           - python3-pip
           - sudo
@@ -83,10 +84,27 @@
         enabled: yes
         state: started
 
-    - name: Install Docker Compose via pip
-      pip:
-        name: docker-compose
-        state: present
+    - name: Install Docker Compose from Docker GitHub repository
+      get_url:
+        url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-`uname -s`-`uname -m`"
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+      register: get_docker_compose
+
+    - name: Create a symbolic link for docker-compose
+      file:
+        src: /usr/local/bin/docker-compose
+        dest: /usr/bin/docker-compose
+        state: link
+      when: get_docker_compose is succeeded
+
+    - name: Verify Docker Compose installation
+      command: "docker-compose --version"
+      register: compose_version
+
+    - name: Debug Docker Compose version
+      debug:
+        msg: "Docker Compose version installed: {{ compose_version.stdout }}"
 
     - name: Verify Docker is working for user casey
       command: "docker run hello-world"
