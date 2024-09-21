@@ -65,14 +65,22 @@
         dest: "{{ compose_dir }}"
         version: "main"
     
-    - name: Change ownership of the cloned directory
+    - name: Create directory for Docker Compose files on the remote server
       file:
-        path: "{{ compose_dir }}"
+        path: "{{ remote_compose_dir }}"
+        state: directory
         owner: "{{ user_name }}"
         group: "{{ user_name }}"
-        state: directory
+
+    - name: Copy Docker Compose files to remote server
+      copy:
+        src: "{{ local_compose_dir }}/"
+        dest: "{{ remote_compose_dir }}/"
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        mode: '0755'
     
     - name: Run Docker Compose script
       command: docker-compose up -d
       args:
-        chdir: "{{ compose_dir }}"
+        chdir: "{{ remote_compose_dir }}"
