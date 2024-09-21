@@ -84,19 +84,26 @@
         enabled: yes
         state: started
 
+    - name: Get OS and architecture info
+      set_fact:
+        os_name: "{{ ansible_distribution | lower }}"
+        arch: "{{ ansible_architecture }}"
+
+    - name: Set Docker Compose download URL based on OS and architecture
+      set_fact:
+        docker_compose_url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-{{ os_name }}-{{ arch }}"
+
     - name: Install Docker Compose from Docker GitHub repository
       get_url:
-        url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-`uname -s`-`uname -m`"
+        url: "{{ docker_compose_url }}"
         dest: /usr/local/bin/docker-compose
         mode: '0755'
-      register: get_docker_compose
 
     - name: Create a symbolic link for docker-compose
       file:
         src: /usr/local/bin/docker-compose
         dest: /usr/bin/docker-compose
         state: link
-      when: get_docker_compose is succeeded
 
     - name: Verify Docker Compose installation
       command: "docker-compose --version"
