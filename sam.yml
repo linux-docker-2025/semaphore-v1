@@ -18,6 +18,7 @@
           - docker-compose
           - python3
           - python3-pip
+          - git
         state: present
     
     - name: Reboot the server after installation
