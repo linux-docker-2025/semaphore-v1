@@ -24,6 +24,5 @@
         upgrade: dist
         autoremove: yes
 
-    - name: Perform a full upgrade
-      apt:
-        full_upgrade: yes
+    - name: Perform a full upgrade using apt-get
+      command: apt-get full-upgrade -y
