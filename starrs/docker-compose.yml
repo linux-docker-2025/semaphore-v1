@@ -41,6 +41,6 @@ services:
 volumes:
   ombi-config:
   ombi-mysql:
-  homarr-config:
+  homarr-configs:
   homarr-icons:
   homarr-data:
