@@ -1,0 +1,17 @@
+---
+- name: Update and Upgrade Apt Packages
+  hosts: all
+  become: true
+  tasks:
+    - name: Update the apt package index
+      apt:
+        update_cache: yes
+
+    - name: Upgrade all upgradable packages
+      apt:
+        upgrade: dist
+        autoremove: yes
+
+    - name: Perform a full upgrade
+      apt:
+        full_upgrade: yes
