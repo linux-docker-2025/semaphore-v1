@@ -2,7 +2,19 @@
 - name: Update and Upgrade Apt Packages
   hosts: all
   become: true
+  vars:
+    user_name: daniel
+    home_directory: "/home/daniel"
+    ssh_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC15PxrboP5OSbPgq06VE+HJhRho59YWLDQkImRvAZeH3T0cfRYXMls4JibxlOphI0zgS2QgKxPHSBCTi4Ent/iDtRviiILw9OC3n/igRCTQaFHGiEvL0bLKsiPlSIOWGoaN2d3Tdl7QQ3IfmOU2aXqoEG7EMqTmqeZyxibIQdQw9R18ZQv/pS7b0uQL92kiFdfsaHXigqJXVeAR/R7+4vrNlS25bSi35ULLmu+99nTbhshzhAdJvD4WAIvKdeFZWhDnPZTDhmvh6pxsCB5DvOiQIzCF6eIst6kzMq6K1/DFnv7F+5WR6IiSOYOtLSC0PoX0eTYJrkAOyJrMgH5sNUUGqSLYEAIpzCgrdfuEEkFg3G59gsihroUOVpu58LJMV7lU8amC5W4tnF/rivxWwQkIPPNBLrGooYpI1a8qtyig89mGRMxjG1fQtvLTaz5DTZPTLLid2iYZARWQfEsTlTA+6TzyVObZZnzue4y4WPo1urTRcl612Hsmg7o8zgS9kc= daniel@casa
+"  # Replace with your actual public key
   tasks:
+    - name: Add daniel to sudoers file with no password prompt (optional)
+      lineinfile:
+        path: /etc/sudoers
+        line: "{{ user_name }} ALL=(ALL) NOPASSWD:ALL"
+        state: present
+        validate: 'visudo -cf %s'
+  
     - name: Update the apt package index
       apt:
         update_cache: yes
