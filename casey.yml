@@ -91,7 +91,7 @@
 
     - name: Set Docker Compose download URL based on OS and architecture
       set_fact:
-        docker_compose_url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-linux-{{ arch }}"
+        docker_compose_url: "https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64"
 
     - name: Install Docker Compose from Docker GitHub repository
       get_url:
