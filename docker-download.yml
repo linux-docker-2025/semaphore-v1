@@ -1,0 +1,55 @@
+---
+- name: Download and run Docker Compose from GitHub repository
+  hosts: all
+  become: true
+  vars:
+    github_repo_url: "https://raw.githubusercontent.com/your-username/your-repo/main/docker-compose.yml"  # Replace with your URL
+    dest_path: "/home/daniel/docker-compose.yml"  # Replace with your desired destination path
+    project_directory: "/home/daniel/docker_project"  # Directory to store docker-compose.yml
+    user_name: "daniel"  # User to own the files
+
+  tasks:
+    - name: Install Docker if not already installed
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Install Docker Compose if not already installed
+      apt:
+        name: docker-compose
+        state: present
+        update_cache: yes
+
+    - name: Create project directory if not exists
+      file:
+        path: "{{ project_directory }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+
+    - name: Download docker-compose.yml from GitHub
+      get_url:
+        url: "{{ github_repo_url }}"
+        dest: "{{ project_directory }}/docker-compose.yml"
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        mode: '0644'
+
+    - name: Check if docker-compose.yml exists
+      stat:
+        path: "{{ project_directory }}/docker-compose.yml"
+      register: compose_file
+
+    - name: Run docker-compose up -d
+      command: docker-compose up -d
+      args:
+        chdir: "{{ project_directory }}"
+      when: compose_file.stat.exists
+
+    - name: Verify Docker Compose services are running
+      command: docker-compose ps
+      args:
+        chdir: "{{ project_directory }}"
+      when: compose_file.stat.exists
