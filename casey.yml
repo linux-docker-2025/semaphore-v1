@@ -97,7 +97,7 @@
       get_url:
         url: "{{ docker_compose_url }}"
         dest: /usr/local/bin/docker-compose
-        mode: '0755'
+        mode: '0775'
 
     - name: Create a symbolic link for docker-compose
       file:
