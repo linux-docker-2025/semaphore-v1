@@ -1,0 +1,139 @@
+---
+- name: Setup basic tools and Docker for user daniel
+  hosts: all
+  become: true
+  vars:
+    user_name: daniel
+    home_directory: "/home/daniel"
+    ssh_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC15PxrboP5OSbPgq06VE+HJhRho59YWLDQkImRvAZeH3T0cfRYXMls4JibxlOphI0zgS2QgKxPHSBCTi4Ent/iDtRviiILw9OC3n/igRCTQaFHGiEvL0bLKsiPlSIOWGoaN2d3Tdl7QQ3IfmOU2aXqoEG7EMqTmqeZyxibIQdQw9R18ZQv/pS7b0uQL92kiFdfsaHXigqJXVeAR/R7+4vrNlS25bSi35ULLmu+99nTbhshzhAdJvD4WAIvKdeFZWhDnPZTDhmvh6pxsCB5DvOiQIzCF6eIst6kzMq6K1/DFnv7F+5WR6IiSOYOtLSC0PoX0eTYJrkAOyJrMgH5sNUUGqSLYEAIpzCgrdfuEEkFg3G59gsihroUOVpu58LJMV7lU8amC5W4tnF/rivxWwQkIPPNBLrGooYpI1a8qtyig89mGRMxjG1fQtvLTaz5DTZPTLLid2iYZARWQfEsTlTA+6TzyVObZZnzue4y4WPo1urTRcl612Hsmg7o8zgS9kc= daniel@casa
+"  # Replace with your actual public key
+    docker_compose_version: "2.29.7"  # Specify desired Docker Compose version
+
+  tasks:
+    - name: Update apt cache and upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install essential packages
+      apt:
+        name:
+          - git
+          - tree
+          - htop
+          - curl
+          - docker.io
+          - python3
+          - python3-pip
+          - sudo
+        state: present
+        update_cache: yes
+
+    - name: Create user daniel with home directory
+      user:
+        name: "{{ user_name }}"
+        home: "{{ home_directory }}"
+        shell: /bin/bash
+        create_home: yes
+        state: present
+
+    - name: Set password for user daniel
+      user:
+        name: "{{ user_name }}"
+        password: "{{ 'password' | password_hash('sha512') }}"
+        update_password: on_create
+
+    - name: Add user daniel to sudo group
+      user:
+        name: "{{ user_name }}"
+        groups: sudo
+        append: yes
+
+    - name: Add user daniel to docker group
+      user:
+        name: "{{ user_name }}"
+        groups: docker
+        append: yes
+
+    - name: Create .ssh directory for user daniel
+      file:
+        path: "{{ home_directory }}/.ssh"
+        state: directory
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        mode: '0700'
+
+    - name: Add authorized SSH key for user daniel
+      copy:
+        dest: "{{ home_directory }}/.ssh/authorized_keys"
+        content: "{{ ssh_public_key }}"
+        owner: "{{ user_name }}"
+        group: "{{ user_name }}"
+        mode: '0600'
+
+    - name: Add daniel to sudoers file with no password prompt (optional)
+      lineinfile:
+        path: /etc/sudoers
+        line: "{{ user_name }} ALL=(ALL) NOPASSWD:ALL"
+        state: present
+        validate: 'visudo -cf %s'
+
+    - name: Enable and start Docker service
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    - name: Get OS and architecture info
+      set_fact:
+        os_name: "{{ ansible_distribution | lower }}"
+        arch: "{{ ansible_architecture }}"
+
+    - name: Set Docker Compose download URL based on OS and architecture
+      set_fact:
+        docker_compose_url: "https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64"
+
+    - name: Download Docker Compose
+      shell: "curl -L {{ docker_compose_url }} -o /usr/local/bin/docker-compose"
+      args:
+        executable: /bin/bash
+      register: download_docker_compose
+      failed_when: "'404' in download_docker_compose.stdout"  # Fails if URL is not found
+
+    - name: Check if Docker Compose was downloaded
+      stat:
+        path: /usr/local/bin/docker-compose
+      register: docker_compose_stat
+
+    - name: Set execute permissions for Docker Compose
+      file:
+        path: /usr/local/bin/docker-compose
+        mode: '0755'
+      when: docker_compose_stat.stat.exists
+
+    - name: Create a symbolic link for docker-compose
+      file:
+        src: /usr/local/bin/docker-compose
+        dest: /usr/bin/docker-compose
+        state: link
+        force: yes
+      when: docker_compose_stat.stat.exists
+
+    - name: Verify Docker Compose installation
+      command: "docker-compose --version"
+      register: compose_version
+
+    - name: Debug Docker Compose version
+      debug:
+        msg: "Docker Compose version installed: {{ compose_version.stdout }}"
+
+    - name: Verify Docker is working for user daniel
+      command: "docker run hello-world"
+      become_user: "{{ user_name }}"
+      ignore_errors: yes  # Ignore errors in case Docker isn't set up properly yet
+
+  handlers:
+    - name: Restart Docker
+      systemd:
+        name: docker
+        state: restarted
