@@ -3,7 +3,7 @@
   hosts: all
   become: true
   vars:
-    github_repo_url: "https://raw.githubusercontent.com/linux-docker-2025/semaphore-v1/refs/heads/main/starrs/docker-compose.yml"  # Replace with your URL
+    github_repo_url: "https://raw.githubusercontent.com/your-username/your-repo/main/docker-compose.yml"  # Replace with your URL
     dest_path: "/home/daniel/docker-compose.yml"  # Replace with your desired destination path
     project_directory: "/home/daniel/docker_project"  # Directory to store docker-compose.yml
     user_name: "daniel"  # User to own the files
@@ -29,6 +29,20 @@
         owner: "{{ user_name }}"
         group: "{{ user_name }}"
 
+    - name: Pause for 2 seconds to ensure directory is created
+      pause:
+        seconds: 2
+
+    - name: Verify project directory exists
+      stat:
+        path: "{{ project_directory }}"
+      register: project_dir_stat
+
+    - name: Fail if project directory does not exist
+      fail:
+        msg: "Project directory {{ project_directory }} does not exist."
+      when: not project_dir_stat.stat.exists
+
     - name: Download docker-compose.yml from GitHub
       get_url:
         url: "{{ github_repo_url }}"
@@ -36,6 +50,7 @@
         owner: "{{ user_name }}"
         group: "{{ user_name }}"
         mode: '0644'
+      when: project_dir_stat.stat.exists
 
     - name: Check if docker-compose.yml exists
       stat:
