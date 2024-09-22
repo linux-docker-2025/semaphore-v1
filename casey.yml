@@ -93,17 +93,31 @@
       set_fact:
         docker_compose_url: "https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64"
 
-    - name: Install Docker Compose from Docker GitHub repository
-      get_url:
-        url: "{{ docker_compose_url }}"
-        dest: /usr/local/bin/docker-compose
-        mode: '0775'
+    - name: Download Docker Compose
+      shell: "curl -L {{ docker_compose_url }} -o /usr/local/bin/docker-compose"
+      args:
+        executable: /bin/bash
+      register: download_docker_compose
+      failed_when: "'404' in download_docker_compose.stdout"  # Fails if URL is not found
+
+    - name: Check if Docker Compose was downloaded
+      stat:
+        path: /usr/local/bin/docker-compose
+      register: docker_compose_stat
+
+    - name: Set execute permissions for Docker Compose
+      file:
+        path: /usr/local/bin/docker-compose
+        mode: '0755'
+      when: docker_compose_stat.stat.exists
 
     - name: Create a symbolic link for docker-compose
       file:
         src: /usr/local/bin/docker-compose
         dest: /usr/bin/docker-compose
         state: link
+        force: yes
+      when: docker_compose_stat.stat.exists
 
     - name: Verify Docker Compose installation
       command: "docker-compose --version"
