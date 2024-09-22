@@ -57,6 +57,12 @@
         path: "{{ project_directory }}/docker-compose.yml"
       register: compose_file
 
+    - name: Run docker-compose pull
+      command: docker-compose pull
+      args:
+        chdir: "{{ project_directory }}"
+      when: compose_file.stat.exists
+
     - name: Run docker-compose up -d
       command: docker-compose up -d
       args:
