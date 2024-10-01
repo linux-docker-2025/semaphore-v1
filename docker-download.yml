@@ -4,9 +4,9 @@
   become: true
   vars:
     github_repo_url: "https://raw.githubusercontent.com/linux-docker-2025/semaphore-v1/refs/heads/main/starrs/docker-compose.yml"  # Replace with your URL
-    dest_path: "/home/daniel/docker-compose.yml"  # Replace with your desired destination path
+    dest_path: "/home/vboxuser/docker-compose.yml"  # Replace with your desired destination path
     project_directory: "/home/daniel/docker_project"  # Directory to store docker-compose.yml
-    user_name: "daniel"  # User to own the files
+    user_name: "vboxuser"  # User to own the files
 
   tasks:
     - name: Install Docker if not already installed
